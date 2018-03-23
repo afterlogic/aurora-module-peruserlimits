@@ -1,0 +1,42 @@
+{
+  "Disabled": [
+    false,
+    "bool"
+  ],
+  "MaxMailsSending": [
+    50,
+    "int"
+  ],
+  "MaxContacts": [
+    10,
+    "int"
+  ],
+  "MaxContactsGroups": [
+    3,
+    "int"
+  ],
+  "MaxMailAttachmentSize": [
+    100048576,
+    "int"
+  ],
+  "MaxFileSizeCloud": [
+    100048576,
+    "int"
+  ],
+  "MaxFilesUploadCloud": [
+    50,
+    "int"
+  ],
+  "MaxFoldersCloud": [
+    10,
+    "int"
+  ],
+  "MaxDownloadsCloud": [
+    50048576,
+    "int"
+  ],
+  "MaxCalendars": [
+    1,
+    "int"
+  ]
+}

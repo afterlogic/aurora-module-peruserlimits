@@ -1,0 +1,10 @@
+{
+	"name": "afterlogic/aurora-module-peruserlimits",
+	"type": "aurora-module",
+	"require":{
+		"php":">=5.4.0"
+	},
+	"extra": {
+		"installer-name": "PerUserLimits"
+	}
+}
