@@ -39,6 +39,8 @@ class Module extends \Aurora\System\Module\AbstractModule
         $this->subscribeEvent('Calendar::CreateCalendar::before', array($this, 'onBeforeCreateCalendar'));
 
         $this->subscribeEvent('Core::DoServerInitializations::before', array($this, 'onServerInitializations'));
+
+        $this->subscribeEvent('System::toResponseArray::after', array($this, 'onAfterToResponseArray'));
     }
 
     public function GetSettings()
@@ -278,20 +280,22 @@ class Module extends \Aurora\System\Module\AbstractModule
         }
     }
 
-    private function changeVipStatus()
+    public function changeVipStatus()
     {
+        $sParameters = $this->oHttp->GetPost('Parameters', null);
+        $aParameters = json_decode($sParameters);
+        $iUserId = intval($aParameters->iId);
+        $iVip = intval($aParameters->iVip);
+
         $oMailSuiteConnector = \Aurora\System\Api::GetModule('MailSuiteConnector');
-
         if ($oMailSuiteConnector) {
-            $sEmail = 'an.polikanin@foldercrate.com';
-            $iVip = 1;
-
-            $oUser = $oMailSuiteConnector->getUserByEmail($sEmail);
+            $oCoreDecorator = \Aurora\Modules\Core\Module::Decorator();
+            $oUser = $oCoreDecorator->GetUser($iUserId);
             $sToken = $oMailSuiteConnector->sToken;
 
             $sResult = $this->sendAction("PUT", "/account/vip", [
                 'token' => $sToken,
-                'email' => $sEmail,
+                'email' => $oUser->PublicId,
                 'vip' => $iVip
             ]);
 
@@ -306,5 +310,13 @@ class Module extends \Aurora\System\Module\AbstractModule
             return false;
         }
     }
+
+    public function onAfterToResponseArray(&$aArgs, &$mResult) {
+        if (isset($aArgs[0]) && $aArgs[0] instanceof \Aurora\Modules\Core\Classes\User) {
+            $oUser = $aArgs[0];
+            $mResult['Vip'] = $oUser->{$this->GetName() . '::Vip'};
+        }
+    }
+
 
 }
