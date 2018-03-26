@@ -284,11 +284,11 @@ class Module extends \Aurora\System\Module\AbstractModule
     {
         $sParameters = $this->oHttp->GetPost('Parameters', null);
         $aParameters = json_decode($sParameters);
-        $iUserId = intval($aParameters->iId);
-        $iVip = intval($aParameters->iVip);
+        $iUserId = isset($aParameters->iId) ? intval($aParameters->iId) : 0;
+        $iVip = isset($aParameters->iVip) ? intval($aParameters->iVip) : 0;
 
         $oMailSuiteConnector = \Aurora\System\Api::GetModule('MailSuiteConnector');
-        if ($oMailSuiteConnector) {
+        if ($oMailSuiteConnector && $iUserId > 0) {
             $oCoreDecorator = \Aurora\Modules\Core\Module::Decorator();
             $oUser = $oCoreDecorator->GetUser($iUserId);
             $sToken = $oMailSuiteConnector->sToken;
@@ -301,7 +301,6 @@ class Module extends \Aurora\System\Module\AbstractModule
 
             if ($sResult) {
                 $oUser->{$this->GetName() . '::Vip'} = $iVip;
-                $oCoreDecorator = \Aurora\Modules\Core\Module::Decorator();
                 $oCoreDecorator->UpdateUserObject($oUser);
 
                 return $sResult;
