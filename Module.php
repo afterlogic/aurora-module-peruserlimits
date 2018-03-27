@@ -209,8 +209,6 @@ class Module extends \Aurora\System\Module\AbstractModule
             }
         }
 
-        $this->getToken();
-
         return $mResults;
     }
 
