@@ -293,13 +293,15 @@ class Module extends \Aurora\System\Module\AbstractModule
             $oUser = $oCoreDecorator->GetUser($iUserId);
             $sToken = $oMailSuiteConnector->sToken;
 
-            $sResult = $this->sendAction("PUT", "/account/vip", [
+            $sResult = $oMailSuiteConnector->sendAction("PUT", "/account/vip", [
                 'token' => $sToken,
                 'email' => $oUser->PublicId,
                 'vip' => $iVip
             ]);
 
-            if ($sResult) {
+            $aResult = json_decode($sResult);
+
+            if ($aResult->errorCode == 0) {
                 $oUser->{$this->GetName() . '::Vip'} = $iVip;
                 $oCoreDecorator->UpdateUserObject($oUser);
 
