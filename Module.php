@@ -284,7 +284,7 @@ class Module extends \Aurora\System\Module\AbstractModule
         $sParameters = $this->oHttp->GetPost('Parameters', null);
         $aParameters = json_decode($sParameters);
         $iUserId = isset($aParameters->id) ? intval($aParameters->id) : 0;
-        $iVip = isset($aParameters->vip) ? intval($aParameters->vip) : 0;
+        $bVip = isset($aParameters->vip) ? boolval($aParameters->vip) : false;
 
         $oMailSuiteConnector = \Aurora\System\Api::GetModule('MailSuiteConnector');
         if ($oMailSuiteConnector && $iUserId > 0) {
@@ -295,21 +295,19 @@ class Module extends \Aurora\System\Module\AbstractModule
             $sResult = $oMailSuiteConnector->sendAction("PUT", "/account/vip", [
                 'token' => $sToken,
                 'email' => $oUser->PublicId,
-                'vip' => $iVip
+                'vip' => $bVip
             ]);
 
-            $oResult = is_array($sResult) ? json_decode($sResult) : null;
-            if (isset($oResult->errorCode) && $oResult->errorCode == 0) {
-                $oUser->{$this->GetName() . '::Vip'} = $iVip;
+            $oResult = json_decode($sResult);
+            if (isset($oResult->result) && $oResult->result == true) {
+                $oUser->{$this->GetName() . '::Vip'} = $bVip;
                 $oCoreDecorator->UpdateUserObject($oUser);
 
                 return true;
             }
-
-            return false;
         }
 
-        return true;
+        return false;
     }
 
     public function onAfterToResponseArray(&$aArgs, &$mResult) {
