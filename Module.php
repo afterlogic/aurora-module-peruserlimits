@@ -298,17 +298,18 @@ class Module extends \Aurora\System\Module\AbstractModule
                 'vip' => $iVip
             ]);
 
-            $aResult = json_decode($sResult);
-
-            if ($aResult->errorCode == 0) {
+            $oResult = is_array($sResult) ? json_decode($sResult) : null;
+            if (isset($oResult->errorCode) && $oResult->errorCode == 0) {
                 $oUser->{$this->GetName() . '::Vip'} = $iVip;
                 $oCoreDecorator->UpdateUserObject($oUser);
 
-                return $sResult;
+                return true;
             }
 
             return false;
         }
+
+        return true;
     }
 
     public function onAfterToResponseArray(&$aArgs, &$mResult) {
