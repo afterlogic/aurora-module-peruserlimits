@@ -266,7 +266,7 @@ class Module extends \Aurora\System\Module\AbstractModule
                     $iSize = $aMetadata['size'];
 
                     $settings = $this->GetSettings();
-                    if ($settings['Vip'] === 0 && ($oUser->{$this->GetName() . '::DownloadedSize'} >= $settings['MaxDownloadsCloud']) || ($iSize >= $settings['MaxDownloadsCloud'])) {
+                    if ($settings['Vip'] === 0 && ($oUser->{$this->GetName() . '::DownloadedSize'} >= $settings['MaxDownloadsCloud']) || $settings['Vip'] === 0 && ($iSize >= $settings['MaxDownloadsCloud'])) {
                         throw new \Exception('ErrorMaxDownloadsCloud');
                     }
 
