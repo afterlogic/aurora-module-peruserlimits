@@ -71,7 +71,7 @@ class Module extends \Aurora\System\Module\AbstractModule
     {
         $settings = $this->GetSettings();
 
-        if (isset($aArgs['Contact']) && isset($aArgs['Contact']['Auto']) && !$aArgs['Contact']['Auto']) {
+        if (isset($aArgs['Contact']) && !isset($aArgs['Contact']['Auto'])) {
             $oContactsModule = \Aurora\System\Api::GetModule('Contacts');
             if ($oContactsModule) {
                 $oUser = \Aurora\System\Api::getAuthenticatedUser();
