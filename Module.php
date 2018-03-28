@@ -256,11 +256,6 @@ class Module extends \Aurora\System\Module\AbstractModule
 
             $this->resetQuotas();
 
-            $settings = $this->GetSettings();
-            if ($settings['Vip'] === 0 && $oUser->{$this->GetName() . '::DownloadedSize'} >= $settings['MaxDownloadsCloud']) {
-                throw new \Exception('ErrorMaxDownloadsCloud');
-            }
-
             if ($aArgs['Type'] === 'personal') {
                 $sUserPublicId = \Aurora\System\Api::getUserPublicIdById($aArgs['UserId']);
                 $iOffset = isset($aArgs['Offset']) ? $aArgs['Offset'] : 0;
@@ -268,9 +263,15 @@ class Module extends \Aurora\System\Module\AbstractModule
                 $metaFile = $this->oApiFilesManager->getFile($sUserPublicId, $aArgs['Type'], $aArgs['Path'], $aArgs['Id'], $iOffset, $iChunkSize);
                 if (is_resource($metaFile)) {
                     $aMetadata = json_decode(stream_get_contents($metaFile), JSON_OBJECT_AS_ARRAY);
+                    $iSize = $aMetadata['size'];
+
+                    $settings = $this->GetSettings();
+                    if ($settings['Vip'] === 0 && ($oUser->{$this->GetName() . '::DownloadedSize'} >= $settings['MaxDownloadsCloud']) || ($iSize >= $settings['MaxDownloadsCloud'])) {
+                        throw new \Exception('ErrorMaxDownloadsCloud');
+                    }
 
                     $oDateTime = new \DateTime('midnight');
-                    $oUser->{$this->GetName() . '::DownloadedSize'} = $oUser->{$this->GetName() . '::DownloadedSize'} + $aMetadata['size'];
+                    $oUser->{$this->GetName() . '::DownloadedSize'} = $oUser->{$this->GetName() . '::DownloadedSize'} + $iSize;
                     $oUser->{$this->GetName() . '::DateTimeDownloadedSize'} = $oDateTime->format('Y-m-d H:i:s');
                     $oCoreDecorator->UpdateUserObject($oUser);
                 }
