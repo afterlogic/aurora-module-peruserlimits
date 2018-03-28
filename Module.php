@@ -283,8 +283,8 @@ class Module extends \Aurora\System\Module\AbstractModule
     {
         $sParameters = $this->oHttp->GetPost('Parameters', null);
         $aParameters = json_decode($sParameters);
-        $iUserId = isset($aParameters->iId) ? intval($aParameters->iId) : 0;
-        $iVip = isset($aParameters->iVip) ? intval($aParameters->iVip) : 0;
+        $iUserId = isset($aParameters->id) ? intval($aParameters->id) : 0;
+        $iVip = isset($aParameters->vip) ? intval($aParameters->vip) : 0;
 
         $oMailSuiteConnector = \Aurora\System\Api::GetModule('MailSuiteConnector');
         if ($oMailSuiteConnector && $iUserId > 0) {
