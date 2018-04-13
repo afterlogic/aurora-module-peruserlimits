@@ -30,17 +30,22 @@ class Module extends \Aurora\System\Module\AbstractModule
         $this->subscribeEvent('Contacts::CreateGroup::before', [$this, 'onBeforeCreateGroup']);
 
         $this->subscribeEvent('Mail::UploadAttachment::before', [$this, 'onBeforeUploadAttachment']);
+        $this->subscribeEvent('Files::GetFilesForUpload::before', [$this, 'onBeforeGetFilesForUpload']);
 
         $this->subscribeEvent('Files::CreateFolder::before', [$this, 'onBeforeCreateFolder']);
         $this->subscribeEvent('Files::UploadFile::before', [$this, 'onBeforeUploadFile']);
         $this->subscribeEvent('Files::UploadFile::after', [$this, 'onAfterUploadFile']);
-        $this->subscribeEvent('Files::GetFile', array($this, 'onGetFile'), 1);
+
+
+        $this->subscribeEvent('download-file-entry::before', array($this, 'DownloadFile'));
+
 
         $this->subscribeEvent('Calendar::CreateCalendar::before', array($this, 'onBeforeCreateCalendar'));
 
         $this->subscribeEvent('Core::DoServerInitializations::before', array($this, 'onServerInitializations'));
 
         $this->subscribeEvent('System::toResponseArray::after', array($this, 'onAfterToResponseArray'));
+
     }
 
     public function GetSettings()
@@ -247,35 +252,74 @@ class Module extends \Aurora\System\Module\AbstractModule
         }
     }
 
-    public function onGetFile(&$aArgs, &$mResult)
-    {
-        $iUserId = \Aurora\System\Api::getAuthenticatedUserId();
-        if (0 < $iUserId) {
-            $oCoreDecorator = \Aurora\Modules\Core\Module::Decorator();
-            $oUser = $oCoreDecorator->GetUser($iUserId);
 
-            $this->resetQuotas();
+    public function DownloadFile() {
+        $sHash = (string) \Aurora\System\Application::GetPathItemByIndex(1, '');
+        $sAction = (string) \Aurora\System\Application::GetPathItemByIndex(2, '');
+        $iOffset = (int) \Aurora\System\Application::GetPathItemByIndex(3, '');
+        $iChunkSize = (int) \Aurora\System\Application::GetPathItemByIndex(4, '');
 
-            if ($aArgs['Type'] === 'personal') {
-                $sUserPublicId = \Aurora\System\Api::getUserPublicIdById($aArgs['UserId']);
-                $iOffset = isset($aArgs['Offset']) ? $aArgs['Offset'] : 0;
-                $iChunkSize = isset($aArgs['ChunkSize']) ? $aArgs['ChunkSize'] : 0;
-                $metaFile = $this->oApiFilesManager->getFile($sUserPublicId, $aArgs['Type'], $aArgs['Path'], $aArgs['Id'], $iOffset, $iChunkSize);
-                if (is_resource($metaFile)) {
-                    $aMetadata = json_decode(stream_get_contents($metaFile), JSON_OBJECT_AS_ARRAY);
-                    $iSize = $aMetadata['size'];
+        if ($sAction !== 'thumb') {
+            $aValues = \Aurora\System\Api::DecodeKeyValues($sHash);
 
-                    $settings = $this->GetSettings();
-                    if ($settings['Vip'] === 0 && ($oUser->{$this->GetName() . '::DownloadedSize'} >= $settings['MaxDownloadsCloud']) || $settings['Vip'] === 0 && ($iSize >= $settings['MaxDownloadsCloud'])) {
-                        throw new \Exception('ErrorMaxDownloadsCloud');
+            $iUserId = isset($aValues['UserId']) ? (int)$aValues['UserId'] : 0;
+            $sType = isset($aValues['Type']) ? $aValues['Type'] : '';
+            $sPath = isset($aValues['Path']) ? $aValues['Path'] : '';
+            $sFileName = isset($aValues['Name']) ? $aValues['Name'] : '';
+            $sPublicHash = isset($aValues['PublicHash']) ? $aValues['PublicHash'] : null;
+
+            $iUserId = \Aurora\System\Api::getAuthenticatedUserId();
+            if (0 < $iUserId) {
+                $oCoreDecorator = \Aurora\Modules\Core\Module::Decorator();
+                $oUser = $oCoreDecorator->GetUser($iUserId);
+
+                $this->resetQuotas();
+
+                if ($sType === 'personal') {
+                    $sUserPublicId = \Aurora\System\Api::getUserPublicIdById($iUserId);
+                    $metaFile = $this->oApiFilesManager->getFile($sUserPublicId, $sType, $sPath, $sFileName, $iOffset, $iChunkSize);
+
+                    if (is_resource($metaFile)) {
+                        $aMetadata = json_decode(stream_get_contents($metaFile), JSON_OBJECT_AS_ARRAY);
+                        $iSize = $aMetadata['size'];
+
+                        $settings = $this->GetSettings();
+                        if ($settings['Vip'] === 0 && ($oUser->{$this->GetName() . '::DownloadedSize'} >= $settings['MaxDownloadsCloud']) || $settings['Vip'] === 0 && ($iSize >= $settings['MaxDownloadsCloud'])) {
+                            throw new \Exception('ErrorMaxDownloadsCloud');
+                        }
+
+                        $oDateTime = new \DateTime('midnight');
+                        $oUser->{$this->GetName() . '::DownloadedSize'} = $oUser->{$this->GetName() . '::DownloadedSize'} + $iSize;
+                        $oUser->{$this->GetName() . '::DateTimeDownloadedSize'} = $oDateTime->format('Y-m-d H:i:s');
+                        $oCoreDecorator->UpdateUserObject($oUser);
                     }
-
-                    $oDateTime = new \DateTime('midnight');
-                    $oUser->{$this->GetName() . '::DownloadedSize'} = $oUser->{$this->GetName() . '::DownloadedSize'} + $iSize;
-                    $oUser->{$this->GetName() . '::DateTimeDownloadedSize'} = $oDateTime->format('Y-m-d H:i:s');
-                    $oCoreDecorator->UpdateUserObject($oUser);
                 }
             }
+        }
+    }
+
+    public function onBeforeGetFilesForUpload(&$aArgs, &$mResult) {
+        $aHashes = isset($aArgs['Hashes']) ? $aArgs['Hashes'] : [];
+        $sHash = isset($aHashes[0]) ? $aHashes[0] : '';
+
+        $aValues = \Aurora\System\Api::DecodeKeyValues($sHash);
+        $iUserId = isset($aValues['UserId']) ? (int) $aValues['UserId'] : 0;
+        $sType = isset($aValues['Type']) ? $aValues['Type'] : '';
+        $sPath = isset($aValues['Path']) ? $aValues['Path'] : '';
+        $sFileName = isset($aValues['Name']) ? $aValues['Name'] : '';
+        $sPublicHash = isset($aValues['PublicHash']) ? $aValues['PublicHash'] : null;
+
+        $sUserPublicId = \Aurora\System\Api::getUserPublicIdById($iUserId);
+        $metaFile = $this->oApiFilesManager->getFile($sUserPublicId, $sType, $sPath, $sFileName);
+        $iSize = 0;
+        if (is_resource($metaFile)) {
+            $aMetadata = json_decode(stream_get_contents($metaFile), JSON_OBJECT_AS_ARRAY);
+            $iSize = $aMetadata['size'];
+        }
+
+        $settings = $this->GetSettings();
+        if ($settings['Vip'] === 0 && $iSize > $settings['MaxMailAttachmentSize']) {
+            throw new \Exception('ErrorMaxMailAttachmentSize');
         }
     }
 
@@ -316,6 +360,5 @@ class Module extends \Aurora\System\Module\AbstractModule
             $mResult['Vip'] = $oUser->{$this->GetName() . '::Vip'};
         }
     }
-
-
+    
 }
