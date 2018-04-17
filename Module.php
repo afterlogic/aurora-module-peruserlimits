@@ -300,26 +300,26 @@ class Module extends \Aurora\System\Module\AbstractModule
 
     public function onBeforeGetFilesForUpload(&$aArgs, &$mResult) {
         $aHashes = isset($aArgs['Hashes']) ? $aArgs['Hashes'] : [];
-        $sHash = isset($aHashes[0]) ? $aHashes[0] : '';
 
-        $aValues = \Aurora\System\Api::DecodeKeyValues($sHash);
-        $iUserId = isset($aValues['UserId']) ? (int) $aValues['UserId'] : 0;
-        $sType = isset($aValues['Type']) ? $aValues['Type'] : '';
-        $sPath = isset($aValues['Path']) ? $aValues['Path'] : '';
-        $sFileName = isset($aValues['Name']) ? $aValues['Name'] : '';
-        $sPublicHash = isset($aValues['PublicHash']) ? $aValues['PublicHash'] : null;
+        foreach ($aHashes as $key => $sHash) {
+            $aValues = \Aurora\System\Api::DecodeKeyValues($sHash);
+            $iUserId = isset($aValues['UserId']) ? (int)$aValues['UserId'] : 0;
+            $sType = isset($aValues['Type']) ? $aValues['Type'] : '';
+            $sPath = isset($aValues['Path']) ? $aValues['Path'] : '';
+            $sFileName = isset($aValues['Name']) ? $aValues['Name'] : '';
 
-        $sUserPublicId = \Aurora\System\Api::getUserPublicIdById($iUserId);
-        $metaFile = $this->oApiFilesManager->getFile($sUserPublicId, $sType, $sPath, $sFileName);
-        $iSize = 0;
-        if (is_resource($metaFile)) {
-            $aMetadata = json_decode(stream_get_contents($metaFile), JSON_OBJECT_AS_ARRAY);
-            $iSize = $aMetadata['size'];
-        }
+            $sUserPublicId = \Aurora\System\Api::getUserPublicIdById($iUserId);
+            $metaFile = $this->oApiFilesManager->getFile($sUserPublicId, $sType, $sPath, $sFileName);
+            $iSize = 0;
+            if (is_resource($metaFile)) {
+                $aMetadata = json_decode(stream_get_contents($metaFile), JSON_OBJECT_AS_ARRAY);
+                $iSize = $aMetadata['size'];
+            }
 
-        $settings = $this->GetSettings();
-        if ($settings['Vip'] === 0 && $iSize > $settings['MaxMailAttachmentSize']) {
-            throw new \Exception('ErrorMaxMailAttachmentSize');
+            $settings = $this->GetSettings();
+            if ($settings['Vip'] === 0 && $iSize > $settings['MaxMailAttachmentSize']) {
+                throw new \Exception('ErrorMaxMailAttachmentSize');
+            }
         }
     }
 
@@ -360,5 +360,5 @@ class Module extends \Aurora\System\Module\AbstractModule
             $mResult['Vip'] = $oUser->{$this->GetName() . '::Vip'};
         }
     }
-    
+
 }
