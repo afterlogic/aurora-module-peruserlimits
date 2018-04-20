@@ -55,6 +55,9 @@ class Module extends \Aurora\System\Module\AbstractModule
         $oUser = \Aurora\System\Api::getAuthenticatedUser();
         $aRes = [];
         if ($oUser && $oUser->Role === \Aurora\System\Enums\UserRole::NormalUser) {
+
+            $this->resetQuotas();
+
             $aRes['Vip'] = $oUser->{$this->GetName() . '::Vip'};
             $aRes['MaxContacts'] = $oUser->{$this->GetName() . '::Vip'} === 0 ? $this->getConfig('MaxContacts', 10) : 0;
             $aRes['MaxContactsGroups'] = $oUser->{$this->GetName() . '::Vip'} === 0 ? $this->getConfig('MaxContactsGroups', 10) : 0;
@@ -215,11 +218,6 @@ class Module extends \Aurora\System\Module\AbstractModule
         }
 
         return $mResults;
-    }
-
-    public function onServerInitializations(&$aArgs, &$mResult)
-    {
-        $this->resetQuotas();
     }
 
     private function resetQuotas()
