@@ -86,18 +86,28 @@ class Module extends \Aurora\System\Module\AbstractModule
 
                 $aFilters = [
                     '$AND' => [
-                        'IdUser' => $oUser->EntityId,
-                        'Auto' => false
-                    ]
+                        'IdUser' => [
+                            0 => $oUser->EntityId,
+                            1 => '=',
+                        ],
+                        'Storage' => [
+                            0 => 'personal',
+                            1 => '=',
+                        ],
+                        '$OR' => [
+                            '1@Auto' => [
+                                0 => false,
+                                1 => '=',
+                            ],
+                            '2@Auto' => [
+                                0 => 'NULL',
+                                1 => 'IS',
+                            ],
+                        ],
+                    ],
                 ];
 
-                $aContacts = $oContactsModule->oApiContactsManager->getContacts(
-                    \Aurora\Modules\Contacts\Enums\SortField::Name, \Aurora\System\Enums\SortOrder::ASC, 0, 0, $aFilters
-                );
-
-                $aContacts = \Aurora\System\Managers\Response::GetResponseObject($aContacts);
-                $iContacts = count($aContacts);
-
+                $iContacts = $oContactsModule->oApiContactsManager->getContactsCount($aFilters);
                 if ($settings['Vip'] === 0 && $iContacts >= $settings['MaxContacts']) {
                     throw new \Exception('ErrorMaxContacts');
                 }
